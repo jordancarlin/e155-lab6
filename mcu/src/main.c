@@ -22,7 +22,9 @@ char* webpageStart = "<!DOCTYPE html><html><head><title>E155 Web Server Demo Web
 	<body><h1>E155 Web Server Demo Webpage</h1>";
 char* ledStr = "<h1>LED</h1><p>LED Control:</p><form action=\"ledon\"><input type=\"submit\" value=\"Turn the LED on!\"></form>\
 	<form action=\"ledoff\"><input type=\"submit\" value=\"Turn the LED off!\"></form>";
-char* tempStr = "<h1>Temperature</h1>";
+char* tempStr = "<h1>Temperature</h1><p>Temperature Precision:</p><form action=\"precision8\"><input type=\"submit\" value=\"8 bits\"></form>\
+	<form action=\"precision9\"><input type=\"submit\" value=\"9 bits\"></form><form action=\"precision10\"><input type=\"submit\" value=\"10 bits\"></form>\
+  <form action=\"precision11\"><input type=\"submit\" value=\"11 bits\"></form><form action=\"precision12\"><input type=\"submit\" value=\"12 bits\"></form>";
 char* webpageEnd   = "</body></html>";
 
 //determines whether a given character sequence is in a char array request, returning 1 if present, -1 if not present
@@ -47,6 +49,23 @@ int updateLEDStatus(char request[])
 	return led_status;
 }
 
+void updatePrecision(char request[])
+{
+	int precision = 9;
+	if (inString(request, "precision8")) {
+		precision = 8;
+	} else if (inString(request, "precision9")) {
+		precision = 9;
+	} else if (inString(request, "precision10")) {
+		precision = 10;
+	} else if (inString(request, "precision11")) {
+		precision = 11;
+	} else if (inString(request, "precision12")) {
+		precision = 12;
+	}
+  setPrecision(precision);
+}
+
 /////////////////////////////////////////////////////////////////
 // Solution Functions
 /////////////////////////////////////////////////////////////////
@@ -66,7 +85,8 @@ int main(void) {
 
   USART_TypeDef * USART = initUSART(USART1_ID, 125000);
 
-  // TODO: Add SPI initialization code
+  // SPI initialization code
+  initSPI(0b111, 0, 1); // check baud rate
 
   while(1) {
     /* Wait for ESP8266 to send a request.
@@ -85,13 +105,16 @@ int main(void) {
       request[charIndex++] = readChar(USART);
     }
 
-    // TODO: Add SPI code here for reading temperature
+    // update temp sensor precision
+    updatePrecision(request);
 
+    // reading temperature
+    float temp = getTemp();
 
-    char currentTempStr[5] = "40  ";
+    char currentTempStr[45];
+    sprintf(currentTempStr, "The current temperature is: %f &degC", temp);
 
     // Update string with current LED state
-
     int led_status = updateLEDStatus(request);
 
     char ledStatusStr[20];
@@ -111,9 +134,9 @@ int main(void) {
 
     // Temperature
     sendString(USART, tempStr);
-    sendString(USART, "<p> The current temperature is: ");
+    sendString(USART, "<p>");
     sendString(USART, currentTempStr);
-    sendString(USART, "&degF </p>");
+    sendString(USART, "</p>");
 
     sendString(USART, webpageEnd);
   }
