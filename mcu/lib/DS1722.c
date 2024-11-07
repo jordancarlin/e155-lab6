@@ -5,7 +5,10 @@
 // source code for DS1722 temperature sensor
 
 #include "DS1722.h"
-// #include <string.h>
+#include <stdint.h>
+#include "STM32L432KC_SPI.h"
+#include "STM32L432KC_GPIO.h"
+#include "STM32L432KC_TIM.h"
 
 // void initTemp(){
 
@@ -13,8 +16,14 @@
 
 // return current temperature
 float getTemp(){
-  int32_t msb = spiSendReceive(0x01);
-  uint32_t lsb = spiSendReceive(0x02);
+  digitalWrite(SPI_CE, 1); // set chip enable
+  spiSendReceive(0x01); // read msb register
+  int8_t msb = spiSendReceive(0x00); // send junk
+  digitalWrite(SPI_CE, 0); // disable chip enable
+  digitalWrite(SPI_CE, 1); // set chip enable
+  spiSendReceive(0x02); // read lsb register
+  uint8_t lsb = spiSendReceive(0x00); // send junk
+  digitalWrite(SPI_CE, 0); // disable chip enable
   float lsbFloat = (float)lsb/256.0;
   float temp = msb + lsbFloat;
   return temp;
@@ -27,17 +36,15 @@ float getTemp(){
 // set precision of temperature sensor (8-12 bits)
 void setPrecision(int precision){
   char configByte;
-  if (precision == 8)  configByte = 0b00000001;
-  if (precision == 9)  configByte = 0b00000011;
-  if (precision == 10) configByte = 0b00000101;
-  if (precision == 11) configByte = 0b00000111;
-  if (precision == 12) configByte = 0b00001001;
+  if (precision == 8)  configByte = 0xF0;
+  if (precision == 9)  configByte = 0xF2;
+  if (precision == 10) configByte = 0xF4;
+  if (precision == 11) configByte = 0xF5;
+  if (precision == 12) configByte = 0xF8;
 
-  int R0, R1, R2;
-  R0 = (precision % 2);
-  R1 = (precision >= 10);
-  R2 = (precision == 12);
-
+  digitalWrite(SPI_CE, 1); // set chip enable
   spiSendReceive(0x80);
   spiSendReceive(configByte);
+  digitalWrite(SPI_CE, 0); // disable chip enable
+  delay_millis(TIM15, 2000);
 }

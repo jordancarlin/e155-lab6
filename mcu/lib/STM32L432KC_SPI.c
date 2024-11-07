@@ -27,6 +27,8 @@ void initSPI(int br, int cpol, int cpha){
   GPIOB->AFR[0] |= _VAL2FLD(GPIO_AFRL_AFSEL4, 5);
   GPIOB->AFR[0] |= _VAL2FLD(GPIO_AFRL_AFSEL5, 5);
 
+  GPIOB->OSPEEDR |= (GPIO_OSPEEDR_OSPEED3); // faster GPIO pins needed for SPI
+
   // Enable SPI system clock
   RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
 
@@ -34,6 +36,7 @@ void initSPI(int br, int cpol, int cpha){
   // CR1 configuration
   // set baud rate
   SPI1->CR1 |= _VAL2FLD(SPI_CR1_BR, br);
+  // SPI1->CR1 &= ~(SPI_CR1_CPOL | SPI_CR1_CPHA | SPI_CR1_LSBFIRST | SPI_CR1_SSM);
   // set clock polarity
   SPI1->CR1 |= _VAL2FLD(SPI_CR1_CPOL, cpol);
   // set clock phase
@@ -66,11 +69,11 @@ void initSPI(int br, int cpol, int cpha){
 char spiSendReceive(char send){
   // wait until transmit FIFO is empty (1 when empty)
   while(!(SPI1->SR & SPI_SR_TXE));
-  // write data to transmit FIFO
-  SPI1->DR = send;
+  // write data to transmit FIFO. Use volatile to prevent compiler issues
+  *(volatile char *) (&SPI1->DR) = send;
   // wait until receive FIFO is NOT empty (0 when empty)
   while(!(SPI1->SR & SPI_SR_RXNE));
   // read data from receive FIFO
-  char receivedData = SPI1->DR;
+  char receivedData = (volatile char) SPI1->DR;
   return receivedData;
 }

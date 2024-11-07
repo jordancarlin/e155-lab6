@@ -64,6 +64,7 @@ void updatePrecision(char request[])
 		precision = 12;
 	}
   setPrecision(precision);
+  return;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -78,7 +79,7 @@ int main(void) {
   gpioEnable(GPIO_PORT_B);
   gpioEnable(GPIO_PORT_C);
 
-  pinMode(PB3, GPIO_OUTPUT);
+  pinMode(LED_PIN, GPIO_OUTPUT);
 
   RCC->APB2ENR |= (RCC_APB2ENR_TIM15EN);
   initTIM(TIM15);
@@ -86,9 +87,10 @@ int main(void) {
   USART_TypeDef * USART = initUSART(USART1_ID, 125000);
 
   // SPI initialization code
-  initSPI(0b111, 0, 1); // check baud rate
+  initSPI(0b111, 0, 1);
 
   while(1) {
+    //char test = spiSendReceive(0x25);
     /* Wait for ESP8266 to send a request.
     Requests take the form of '/REQ:<tag>\n', with TAG begin <= 10 characters.
     Therefore the request[] array must be able to contain 18 characters.
@@ -99,20 +101,22 @@ int main(void) {
     int charIndex = 0;
 
     // Keep going until you get end of line character
-    while(inString(request, "\n") == -1) {
-      // Wait for a complete request to be transmitted before processing
-      while(!(USART->ISR & USART_ISR_RXNE));
-      request[charIndex++] = readChar(USART);
-    }
+    //while(inString(request, "\n") == -1) {
+    // // Wait for a complete request to be transmitted before processing
+    // while(!(USART->ISR & USART_ISR_RXNE));
+    // request[charIndex++] = readChar(USART);
+    //}
 
     // update temp sensor precision
-    updatePrecision(request);
+    // updatePrecision(request);
+    setPrecision(8);
 
     // reading temperature
     float temp = getTemp();
 
     char currentTempStr[45];
-    sprintf(currentTempStr, "The current temperature is: %f &degC", temp);
+    sprintf(currentTempStr, "The current temperature is: %f &degC\n", temp);
+    printf(currentTempStr);
 
     // Update string with current LED state
     int led_status = updateLEDStatus(request);
@@ -135,7 +139,7 @@ int main(void) {
     // Temperature
     sendString(USART, tempStr);
     sendString(USART, "<p>");
-    sendString(USART, currentTempStr);
+    // sendString(USART, currentTempStr);
     sendString(USART, "</p>");
 
     sendString(USART, webpageEnd);
