@@ -67,6 +67,8 @@ void initSPI(int br, int cpol, int cpha){
  *    -- send: the character to send over SPI
  *    -- return: the character received over SPI */
 char spiSendReceive(char send){
+  digitalWrite(SPI_CE, 1); // set chip enable
+  // digitalWrite(SPI_CE, 1);
   // wait until transmit FIFO is empty (1 when empty)
   while(!(SPI1->SR & SPI_SR_TXE));
   // write data to transmit FIFO. Use volatile to prevent compiler issues
@@ -75,5 +77,8 @@ char spiSendReceive(char send){
   while(!(SPI1->SR & SPI_SR_RXNE));
   // read data from receive FIFO
   char receivedData = (volatile char) SPI1->DR;
+  digitalWrite(SPI_CE, 0); // disable chip enable
+
   return receivedData;
+  // digitalWrite(SPI_CE, 0);
 }
