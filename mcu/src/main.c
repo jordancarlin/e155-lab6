@@ -80,116 +80,19 @@ int main(void) {
   gpioEnable(GPIO_PORT_C);
 
   pinMode(LED_PIN, GPIO_OUTPUT);
-  pinMode(PA11, GPIO_OUTPUT);
-  digitalWrite(PA11, 1);
 
   RCC->APB2ENR |= (RCC_APB2ENR_TIM15EN);
   initTIM(TIM15);
-
-  USART_TypeDef * USART = initUSART(USART1_ID, 125000);
 
   // SPI initialization code
   initSPI(0b111, 0, 1);
 
   while(1) {
-    // digitalWrite(SPI_CE, 1);
-    // spiSendReceive(0x01);
-    // digitalWrite(SPI_CE, 0);
-    // // delay_millis(TIM15, 100);
-    // spiSendReceive(0x44);
-    // digitalWrite(SPI_CE, 1);
-    // // delay_millis(TIM15, 100);
-    // digitalWrite(SPI_CE, 0);
-    // // char test = spiSendReceive(0x25);
-
-
-    /* Wait for ESP8266 to send a request.
-    Requests take the form of '/REQ:<tag>\n', with TAG begin <= 10 characters.
-    Therefore the request[] array must be able to contain 18 characters.
-    */
-
-    // Receive web request from the ESP
-    char request[BUFF_LEN] = "                  "; // initialize to known value
-    int charIndex = 0;
-
-    // Keep going until you get end of line character
-    // while(inString(request, "\n") == -1) {
-    //   // Wait for a complete request to be transmitted before processing
-    //   while(!(USART->ISR & USART_ISR_RXNE));
-    //   request[charIndex++] = readChar(USART);
-    // }
-
-    // update temp sensor precision
-    //updatePrecision(request);
-    setPrecision(8);
-
-    // reading temperature
+    setPrecision(12);
     float temp = getTemp();
 
     char currentTempStr[45];
-    sprintf(currentTempStr, "The current temperature is: %f &degC", temp);
+    sprintf(currentTempStr, "The current temperature is: %.4f deg C\n", temp);
     printf(currentTempStr);
-
-
-    // finally, transmit the webpage over UART
-    sendString(USART, webpageStart); // webpage header code
-
-    // LED
-    // sendString(USART, ledStr);
-    // sendString(USART, "<p>");
-    // sendString(USART, ledStatusStr);
-    // sendString(USART, "</p>");
-
-    // Temperature
-    sendString(USART, tempStr);
-    sendString(USART, "<p>");
-    sendString(USART, currentTempStr);
-    sendString(USART, "</p>");
-
-    sendString(USART, webpageEnd);
-  }
-
-  while(1) {
-    /* Wait for ESP8266 to send a request.
-    Requests take the form of '/REQ:<tag>\n', with TAG begin <= 10 characters.
-    Therefore the request[] array must be able to contain 18 characters.
-    */
-
-    // Receive web request from the ESP
-    char request[BUFF_LEN] = "                  "; // initialize to known value
-    int charIndex = 0;
-
-    // Keep going until you get end of line character
-    while(inString(request, "\n") == -1) {
-      // Wait for a complete request to be transmitted before processing
-      while(!(USART->ISR & USART_ISR_RXNE));
-      request[charIndex++] = readChar(USART);
-    }
-
-    // TODO: Add SPI code here for reading temperature
-
-    // Update string with current LED state
-
-    int led_status = updateLEDStatus(request);
-
-    char ledStatusStr[20];
-    if (led_status == 1)
-      sprintf(ledStatusStr,"LED is on!");
-    else if (led_status == 0)
-      sprintf(ledStatusStr,"LED is off!");
-
-    // finally, transmit the webpage over UART
-    sendString(USART, webpageStart); // webpage header code
-    sendString(USART, ledStr); // button for controlling LED
-
-    sendString(USART, "<h2>LED Status</h2>");
-
-
-    sendString(USART, "<p>");
-    sendString(USART, ledStatusStr);
-    sendString(USART, "</p>");
-
-
-    sendString(USART, webpageEnd);
   }
 }

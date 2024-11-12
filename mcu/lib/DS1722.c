@@ -17,17 +17,12 @@
 
 // return current temperature
 float getTemp(){
-  spiSendReceive(0x01); // read msb register
-  int8_t msb = spiSendReceive(0x00); // send junk
-  uint8_t test = spiSendReceive(0x02); // read lsb register
-  uint8_t lsb = spiSendReceive(0x00); // send junk
-  // char msbc = (char)msb;
-  // char lsbc = (char)lsb;
-  // printf("SPI DATA: ");
-  // printf(msbc);
-  // printf(lsbc);
-  // printf("\n");
-  printf("SPI DATA: %02X %02X\n", msb, lsb);
+  digitalWrite(SPI_CE, 1); // set chip enable
+  spiSendReceive(0x02); // read msb register
+  int8_t msb = spiSendReceive(0x20); // send junk
+  uint8_t test = spiSendReceive(0x01); // read lsb register
+  uint8_t lsb = spiSendReceive(0x20); // send junk
+  digitalWrite(SPI_CE, 0); // set chip enable
   float lsbFloat = (float)lsb/256.0;
   float temp = msb + lsbFloat;
   return temp;
@@ -42,7 +37,10 @@ void setPrecision(int precision){
   if (precision == 11) configByte = 0xF5;
   if (precision == 12) configByte = 0xF8;
 
+  digitalWrite(SPI_CE, 1); // set chip enable
   spiSendReceive(0x80);
   spiSendReceive(configByte);
+  digitalWrite(SPI_CE, 0); // set chip enable
+
   delay_millis(TIM15, 2000);
 }
